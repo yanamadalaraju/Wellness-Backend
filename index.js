@@ -12,6 +12,7 @@ const careersRoutes = require('./routes/careers');
 const authRoutes = require('./routes/auth');
 const contactsRoutes = require('./routes/contacts');
 const heroRoutes = require('./routes/heroRoutes');
+const galleryImagesRoutes = require('./routes/galleryImages');
 
 // Create uploads directory
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -32,6 +33,8 @@ app.use('/api', alertImagesRoutes);
 app.use('/api', careersRoutes);
 app.use('/api', authRoutes);
 app.use('/api', contactsRoutes);
+// Add this route
+app.use('/api', galleryImagesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
