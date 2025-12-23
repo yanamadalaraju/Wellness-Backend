@@ -76,7 +76,7 @@ const contactsRoutes = require('./routes/contacts');
 const heroRoutes = require('./routes/heroRoutes');
 const galleryImagesRoutes = require('./routes/galleryImages');
 const weddingHeroRoutes = require('./routes/weddingHero');
-
+const accommodationRoomsRoutes = require('./routes/accommodationRooms');
 // Create uploads directory
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -93,7 +93,7 @@ app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // ✅ Make sure heroRoutes is correctly imported and mounted
 app.use('/api', heroRoutes);
-
+app.use('/api', accommodationRoomsRoutes);
 // Other routes
 app.use('/api', alertImagesRoutes);
 app.use('/api', careersRoutes);
