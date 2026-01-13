@@ -6,6 +6,7 @@ const path = require("path");
 const bcrypt = require("bcrypt");
 const fs = require("fs");
 const contactsRoutes = require("./routes/contacts");
+const accommodationRoomsRouter = require('./routes/accommodationRooms');
 const app = express();
 const port = 5000;
 const pool = require("./db");
@@ -257,7 +258,7 @@ app.get("/api/health", (req, res) => {
 });
 const blogCardsRoutes = require("./routes/blogCards");
 app.use("/api", blogCardsRoutes);
-
+app.use('/api', accommodationRoomsRouter);
 // Start server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
