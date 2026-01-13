@@ -5,16 +5,20 @@ const multer = require("multer");
 const path = require("path");
 const bcrypt = require("bcrypt");
 const fs = require("fs");
-
+const contactsRoutes = require("./routes/contacts");
 const app = express();
 const port = 5000;
+const pool = require("./db");
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-
+const blogUploadPath = path.join(__dirname, "uploads/blogs");
+if (!fs.existsSync(blogUploadPath)) {
+  fs.mkdirSync(blogUploadPath, { recursive: true });
+}
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -30,14 +34,14 @@ const fileFilter = (req, file, cb) => {
   const filetypes = /pdf|doc|docx|octet-stream/;
   const mimetype = filetypes.test(file.mimetype);
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  
+
   if (mimetype && extname) {
     return cb(null, true);
   }
   cb(new Error('Only PDF, DOC, and DOCX files are allowed'));
 };
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: fileFilter
@@ -53,27 +57,9 @@ app.use(cors({
 
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// MySQL connection pool
-const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "wellness",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
 
-// Test database connection
-pool.getConnection()
-  .then(connection => {
-    console.log("MySQL Connected");
-    connection.release();
-  })
-  .catch(err => {
-    console.error('Error connecting to MySQL:', err);
-  });
 
 // Careers endpoint with file upload
 app.post('/api/careers', upload.single('resume'), async (req, res) => {
@@ -97,9 +83,9 @@ app.post('/api/careers', upload.single('resume'), async (req, res) => {
       name, email, phone, designation, message, resumePath
     ]);
 
-    res.json({ 
-      message: 'Application submitted successfully', 
-      id: result.insertId 
+    res.json({
+      message: 'Application submitted successfully',
+      id: result.insertId
     });
   } catch (error) {
     console.error('Error saving career application:', error);
@@ -124,7 +110,7 @@ app.delete('/api/careers/:id', async (req, res) => {
   try {
     // First get the resume path to delete the file
     const [result] = await pool.query('SELECT resume_path FROM careers WHERE id = ?', [req.params.id]);
-    
+
     if (result.length === 0) {
       return res.status(404).json({ error: 'Application not found' });
     }
@@ -140,11 +126,11 @@ app.delete('/api/careers/:id', async (req, res) => {
 
     // Delete from database
     const [deleteResult] = await pool.query('DELETE FROM careers WHERE id = ?', [req.params.id]);
-    
+
     if (deleteResult.affectedRows === 0) {
       return res.status(404).json({ error: 'Application not found' });
     }
-    
+
     res.json({ message: 'Application deleted successfully' });
   } catch (err) {
     console.error('Error deleting application:', err);
@@ -156,7 +142,7 @@ app.delete('/api/careers/:id', async (req, res) => {
 app.post("/api/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    
+
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -176,14 +162,14 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
     const sql = "SELECT * FROM users WHERE email = ?";
     const [results] = await pool.query(sql, [email]);
-    
+
     if (results.length === 0) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -203,12 +189,12 @@ app.post("/api/login", async (req, res) => {
     res.status(500).json({ error: err.message || 'Login failed' });
   }
 });
-
+app.use("/api", contactsRoutes);
 // Contact form endpoint
 app.post('/api/contacts', async (req, res) => {
   try {
     const { name, email, phone, medicalConditions, applyingFrom, message } = req.body;
-    
+
     if (!name || !email || !medicalConditions || !applyingFrom || !message) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -219,13 +205,13 @@ app.post('/api/contacts', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, NOW())
     `;
 
-    const [result] = await pool.query(sql, 
+    const [result] = await pool.query(sql,
       [name, email, phone, medicalConditions, applyingFrom, message]
     );
 
-    res.json({ 
-      message: 'Contact form submitted successfully', 
-      id: result.insertId 
+    res.json({
+      message: 'Contact form submitted successfully',
+      id: result.insertId
     });
   } catch (err) {
     console.error('Error saving contact:', err);
@@ -248,11 +234,11 @@ app.get('/api/contacts', async (req, res) => {
 app.delete('/api/contacts/:id', async (req, res) => {
   try {
     const [result] = await pool.query('DELETE FROM contactss WHERE id = ?', [req.params.id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Contact not found' });
     }
-    
+
     res.json({ message: 'Contact deleted successfully' });
   } catch (err) {
     console.error('Error deleting contact:', err);
@@ -265,6 +251,12 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: err.message });
 });
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+const blogCardsRoutes = require("./routes/blogCards");
+app.use("/api", blogCardsRoutes);
 
 // Start server
 app.listen(port, () => {
