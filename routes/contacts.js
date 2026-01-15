@@ -6,7 +6,7 @@
 // router.post('/contacts', async (req, res) => {
 //   try {
 //     const { name, email, phone, medicalConditions, applyingFrom, message } = req.body;
-    
+
 //     const [result] = await pool.query(
 //       'INSERT INTO contactss (name, email, phone, medical_conditions, applying_from, message) VALUES (?, ?, ?, ?, ?, ?)',
 //       [name, email, phone, medicalConditions, applyingFrom, message]
@@ -59,35 +59,44 @@ router.get('/health', async (req, res) => {
 // Submit contact form
 router.post('/contacts', async (req, res) => {
   console.log('📨 Received contact form submission:', req.body);
-  
+
   try {
-    const { name, email, phone } = req.body;
-    
+    const {
+      name,
+      city,
+      email,
+      phone,
+      hearAboutUs,
+      yourMessage,
+
+    } = req.body;
+
+
     // Validation
-    if (!name || !email || !phone) {
+    if (!name || !city || !email || !phone || !hearAboutUs || !yourMessage) {
       console.log('❌ Validation failed - missing fields');
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'All fields are required',
         received: { name, email, phone }
       });
     }
 
     console.log('💾 Attempting to insert into database...');
-    
+
     // Check if the table has the old structure or new structure
     try {
       // Try inserting with only the three fields (if table has been altered)
       const [result] = await pool.query(
-        'INSERT INTO contacts (name, email, phone) VALUES (?, ?, ?)',
-        [name, email, phone]
+        'INSERT INTO contacts (name, city, email, phone, hear_about_us, your_message) VALUES (?, ?, ?, ?, ?, ?)',
+        [name, city, email, phone, hearAboutUs, yourMessage]
       );
-      
+
       console.log('✅ Database insert successful, ID:', result.insertId);
-      res.status(201).json({ 
-        message: 'Contact form submitted successfully', 
-        id: result.insertId 
+      res.status(201).json({
+        message: 'Contact form submitted successfully',
+        id: result.insertId
       });
-      
+
     } catch (dbError) {
       // If that fails, try with the old structure
       if (dbError.code === 'ER_BAD_FIELD_ERROR') {
@@ -96,22 +105,22 @@ router.post('/contacts', async (req, res) => {
           'INSERT INTO contacts (name, email, phone, medical_conditions, applying_from, message) VALUES (?, ?, ?, ?, ?, ?)',
           [name, email, phone, '', '', '']
         );
-        
+
         console.log('✅ Database insert successful, ID:', result.insertId);
-        res.status(201).json({ 
-          message: 'Contact form submitted successfully', 
-          id: result.insertId 
+        res.status(201).json({
+          message: 'Contact form submitted successfully',
+          id: result.insertId
         });
       } else {
         throw dbError;
       }
     }
-    
+
   } catch (error) {
     console.error('💥 Database error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to submit contact form',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -119,7 +128,7 @@ router.post('/contacts', async (req, res) => {
 // Get all contacts
 router.get('/contacts', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, name, email, phone, created_at FROM contacts ORDER BY created_at DESC');
+    const [rows] = await pool.query('SELECT id, name, city, email, phone, hear_about_us, your_message, created_at FROM contacts ORDER BY created_at DESC');
     res.json(rows);
   } catch (error) {
     console.error('Database error:', error);
@@ -131,11 +140,11 @@ router.get('/contacts', async (req, res) => {
 router.delete('/contacts/:id', async (req, res) => {
   try {
     const [result] = await pool.query('DELETE FROM contacts WHERE id = ?', [req.params.id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Contact not found' });
     }
-    
+
     res.json({ message: 'Contact deleted successfully' });
   } catch (error) {
     console.error('Database error:', error);
