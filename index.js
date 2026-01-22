@@ -78,6 +78,8 @@ const galleryImagesRoutes = require('./routes/galleryImages');
 const weddingHeroRoutes = require('./routes/weddingHero');
 const accommodationRoomsRoutes = require('./routes/accommodationRooms');
 const blogCardsRoutes = require('./routes/blogCards');
+const sendInquiryRoutes = require("./routes/sendInquiry");
+
 
 // Create uploads directory
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -105,6 +107,8 @@ app.use('/api', galleryImagesRoutes);
 app.use('/api', weddingHeroRoutes);
 app.use('/api', galleryRoutes);
 app.use('/api', blogCardsRoutes);
+app.use("/api", sendInquiryRoutes);
+
 
 // Serve gallery images
 app.use('/uploads/gallery', express.static(path.join(__dirname, 'uploads/gallery')));

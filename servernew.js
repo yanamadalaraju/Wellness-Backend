@@ -247,7 +247,7 @@ app.delete('/api/contacts/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete contact' });
   }
 });
-
+app.use('/api', blogCardsRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
